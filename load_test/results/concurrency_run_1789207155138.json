@@ -1,0 +1,28 @@
+{
+  "testTimestamp": "2026-09-12T09:59:15.138Z",
+  "configuration": {
+    "targetUrl": "http://127.0.0.1:5000/api/auth/login",
+    "concurrency": 5,
+    "totalRequests": 10
+  },
+  "performance": {
+    "totalTimeSeconds": 1.0991733000000001,
+    "requestsPerSecond": 9.1,
+    "successCount": 10,
+    "failureCount": 0,
+    "latency": {
+      "minMs": 340.13,
+      "maxMs": 756.91,
+      "avgMs": 457.17,
+      "p50Ms": 412.77,
+      "p90Ms": 554.16,
+      "p95Ms": 756.91,
+      "p99Ms": 756.91
+    }
+  },
+  "sampleJwtTokens": [
+    "eyJhbGciOiJIUz...",
+    "eyJhbGciOiJIUz...",
+    "eyJhbGciOiJIUz..."
+  ]
+}

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StyleLease - Real Concurrent Login Stress Testing Suite</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --primary: #3b82f6;
+      --accent: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justifyContent: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 16px;
+    }
+
+    .header-title h1 {
+      font-size: 24px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .badge-live {
+      background-color: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      border: 1px solid var(--success);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-live::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .grid-control-panel {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-group {
+      margin-bottom: 16px;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-muted);
+    }
+
+    .control-group input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    .control-group input[type="text"],
+    .control-group input[type="number"] {
+      width: 100%;
+      padding: 8px 12px;
+      background-color: #0f172a;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .btn-run {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-run:hover {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-run:disabled {
+      background: #475569;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background-color: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .stat-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .stat-val {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Latency Chart Area */
+    .chart-box {
+      height: 200px;
+      width: 100%;
+      background-color: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      position: relative;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Real-Time Live Logs Terminal */
+    .terminal-window {
+      background-color: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 12px;
+      height: 240px;
+      overflow-y: auto;
+      color: #38bdf8;
+    }
+
+    .log-line {
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .log-200 { color: #4ade80; }
+    .log-err { color: #f87171; }
+    .log-dim { color: #64748b; }
+
+    .progress-bar-wrap {
+      height: 6px;
+      width: 100%;
+      background-color: #0f172a;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transition: width 0.1s linear;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-title">
+        <h1>⚡ StyleLease Concurrency &amp; Load Testing Visualizer</h1>
+        <p>Real-time HTTP socket stress runner testing backend authentication scalability under concurrent virtual user load</p>
+      </div>
+      <div>
+        <span class="badge-live">Real Socket API Test</span>
+      </div>
+    </header>
+
+    <div class="grid-control-panel">
+      <!-- Left: Test Configuration -->
+      <div class="card">
+        <h2>🛠️ Concurrency Controls</h2>
+
+        <div class="control-group">
+          <label>
+            <span>Virtual Users (Concurrency):</span>
+            <strong id="labelConcurrency" style="color: var(--primary);">20 VUs</strong>
+          </label>
+          <input type="range" id="inputConcurrency" min="5" max="60" value="20" />
+        </div>
+
+        <div class="control-group">
+          <label>
+            <span>Total Requests:</span>
+            <strong id="labelRequests" style="color: var(--primary);">60</strong>
+          </label>
+          <input type="range" id="inputRequests" min="20" max="200" step="10" value="60" />
+        </div>
+
+        <div class="control-group">
+          <label>Target API Endpoint:</label>
+          <input type="text" id="inputUrl" value="http://localhost:5000/api/auth/login" />
+        </div>
+
+        <div class="control-group">
+          <label>Test User Credentials:</label>
+          <input type="text" id="inputEmail" value="deep@example.com" placeholder="Email" style="margin-bottom: 6px;" />
+          <input type="text" id="inputPassword" value="password123" placeholder="Password" />
+        </div>
+
+        <button id="btnLaunch" class="btn-run" onclick="startLoadTest()">
+          <span>🚀 Launch Real Concurrency Test</span>
+        </button>
+
+        <div class="progress-bar-wrap">
+          <div id="progressFill" class="progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Right: Live Metrics & Latency Timeline -->
+      <div class="card">
+        <h2>📊 Live Server Performance Metrics</h2>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-title">Active Workers</div>
+            <div id="metricActiveVU" class="stat-val" style="color: var(--primary);">0</div>
+            <div class="stat-sub">Concurrent VUs</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-title">Effective RPS</div>
+            <div id="metricRps" class="stat-val" style="color: var(--success);">0.0</div>
+            <div class="stat-sub">Requests / sec</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-title">Avg Latency</div>
+            <div id="metricLatency" class="stat-val" style="color: var(--warning);">0 ms</div>
+            <div class="stat-sub">Round-trip (p50: <span id="metricP50">0</span>ms)</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-title">Success Rate</div>
+            <div id="metricSuccessRate" class="stat-val" style="color: var(--success);">100%</div>
+            <div class="stat-sub"><span id="metricPassed">0</span> passed / <span id="metricFailed">0</span> err</div>
+          </div>
+        </div>
+
+        <!-- Real-Time Canvas Graph -->
+        <div class="chart-box">
+          <canvas id="latencyCanvas"></canvas>
+        </div>
+
+        <!-- Live Terminal Stream -->
+        <div id="terminalWindow" class="terminal-window">
+          <div class="log-line log-dim">[System] Concurrency tester initialized. Configure settings and click 'Launch Real Concurrency Test'.</div>
+          <div class="log-line log-dim">[System] Ready to dispatch concurrent asynchronous fetch calls against Express &amp; MongoDB.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const inputConcurrency = document.getElementById("inputConcurrency");
+    const inputRequests = document.getElementById("inputRequests");
+    const labelConcurrency = document.getElementById("labelConcurrency");
+    const labelRequests = document.getElementById("labelRequests");
+    const btnLaunch = document.getElementById("btnLaunch");
+    const progressFill = document.getElementById("progressFill");
+
+    const metricActiveVU = document.getElementById("metricActiveVU");
+    const metricRps = document.getElementById("metricRps");
+    const metricLatency = document.getElementById("metricLatency");
+    const metricP50 = document.getElementById("metricP50");
+    const metricSuccessRate = document.getElementById("metricSuccessRate");
+    const metricPassed = document.getElementById("metricPassed");
+    const metricFailed = document.getElementById("metricFailed");
+    const terminalWindow = document.getElementById("terminalWindow");
+    const canvas = document.getElementById("latencyCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Sync sliders
+    inputConcurrency.addEventListener("input", () => {
+      labelConcurrency.innerText = `${inputConcurrency.value} VUs`;
+    });
+    inputRequests.addEventListener("input", () => {
+      labelRequests.innerText = inputRequests.value;
+    });
+
+    let latencyHistory = [];
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function renderChart() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Grid lines
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 1;
+      for (let y = 30; y < canvas.height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      if (latencyHistory.length < 2) return;
+
+      const maxLatency = Math.max(...latencyHistory, 50);
+      const stepX = canvas.width / (latencyHistory.length - 1);
+
+      // Gradient area
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height);
+      latencyHistory.forEach((lat, i) => {
+        const x = i * stepX;
+        const y = canvas.height - (lat / maxLatency) * (canvas.height - 20) - 10;
+        ctx.lineTo(x, y);
+      });
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.closePath();
+
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, "rgba(59, 130, 246, 0.35)");
+      grad.addColorStop(1, "rgba(59, 130, 246, 0.0)");
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Line
+      ctx.beginPath();
+      latencyHistory.forEach((lat, i) => {
+        const x = i * stepX;
+        const y = canvas.height - (lat / maxLatency) * (canvas.height - 20) - 10;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function appendLog(text, className = "") {
+      const line = document.createElement("div");
+      line.className = `log-line ${className}`;
+      line.innerText = text;
+      terminalWindow.appendChild(line);
+      terminalWindow.scrollTop = terminalWindow.scrollHeight;
+    }
+
+    async function startLoadTest() {
+      const concurrency = parseInt(inputConcurrency.value, 10);
+      const totalRequests = parseInt(inputRequests.value, 10);
+      const url = document.getElementById("inputUrl").value.trim();
+      const email = document.getElementById("inputEmail").value.trim();
+      const password = document.getElementById("inputPassword").value.trim();
+
+      btnLaunch.disabled = true;
+      btnLaunch.innerText = "⏳ Running Concurrency Test...";
+      latencyHistory = [];
+      terminalWindow.innerHTML = "";
+      appendLog(`[Test Started] Target: ${url} | Concurrency: ${concurrency} VUs | Total: ${totalRequests} requests`, "log-dim");
+
+      // Preflight check: ensure test account exists or auto-provision
+      try {
+        const preCheck = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        if (preCheck.status === 401) {
+          appendLog(`[Auto-Provision] Test account not found. Creating ${email} via /api/auth/register...`, "log-dim");
+          const regUrl = url.replace(/\/login\/?$/, "/register");
+          await fetch(regUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: "Concurrency Tester", email, password }),
+          });
+        }
+      } catch (e) {
+        // Ignored, worker loop will display socket errors if server is unreachable
+      }
+
+      let completedCount = 0;
+      let passedCount = 0;
+      let failedCount = 0;
+      let activeWorkers = 0;
+      let requestPointer = 0;
+      const startTime = performance.now();
+
+      async function worker(workerId) {
+        while (requestPointer < totalRequests) {
+          const reqNum = ++requestPointer;
+          activeWorkers++;
+          metricActiveVU.innerText = activeWorkers;
+
+          const reqStart = performance.now();
+
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, password }),
+            });
+
+            const latency = Math.round(performance.now() - reqStart);
+            latencyHistory.push(latency);
+            completedCount++;
+
+            if (res.ok) {
+              const data = await res.json();
+              passedCount++;
+              appendLog(
+                `[Worker #${workerId.toString().padStart(2, "0")}] REQ #${reqNum.toString().padStart(3, "0")} -> HTTP ${res.status} OK (${latency}ms) [Token: ${data.token ? data.token.slice(0, 10) + "..." : "✓"}]`,
+                "log-200"
+              );
+            } else {
+              failedCount++;
+              appendLog(`[Worker #${workerId}] REQ #${reqNum} -> HTTP ${res.status} (${latency}ms)`, "log-err");
+            }
+          } catch (err) {
+            const latency = Math.round(performance.now() - reqStart);
+            completedCount++;
+            failedCount++;
+            latencyHistory.push(latency);
+            appendLog(`[Worker #${workerId}] REQ #${reqNum} -> Network Error: ${err.message}`, "log-err");
+          } finally {
+            activeWorkers--;
+            metricActiveVU.innerText = activeWorkers;
+
+            // Update stats
+            const elapsedSec = (performance.now() - startTime) / 1000;
+            const rps = elapsedSec > 0 ? (completedCount / elapsedSec).toFixed(1) : 0;
+            const avgLat = Math.round(latencyHistory.reduce((a, b) => a + b, 0) / latencyHistory.length);
+            const sortedLat = [...latencyHistory].sort((a, b) => a - b);
+            const p50 = sortedLat[Math.floor(sortedLat.length * 0.5)] || 0;
+            const successPct = Math.round((passedCount / completedCount) * 100);
+
+            metricRps.innerText = rps;
+            metricLatency.innerText = `${avgLat} ms`;
+            metricP50.innerText = p50;
+            metricPassed.innerText = passedCount;
+            metricFailed.innerText = failedCount;
+            metricSuccessRate.innerText = `${successPct}%`;
+
+            const progressPct = (completedCount / totalRequests) * 100;
+            progressFill.style.width = `${progressPct}%`;
+
+            renderChart();
+          }
+        }
+      }
+
+      // Launch worker pool
+      const pool = [];
+      for (let w = 1; w <= concurrency; w++) {
+        pool.push(worker(w));
+      }
+
+      await Promise.all(pool);
+
+      const totalTimeSec = ((performance.now() - startTime) / 1000).toFixed(2);
+      appendLog(
+        `\n[COMPLETED] Successfully processed ${completedCount} concurrent requests in ${totalTimeSec}s! All virtual users finished.`,
+        "log-200"
+      );
+
+      btnLaunch.disabled = false;
+      btnLaunch.innerText = "🚀 Launch Real Concurrency Test";
+    }
+  </script>
+</body>
+</html>

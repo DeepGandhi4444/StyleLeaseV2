@@ -1,0 +1,27 @@
+{
+  "name": "stylelease-mern",
+  "version": "1.0.0",
+  "description": "StyleLease - MERN Stack Fashion Rental Application",
+  "scripts": {
+    "server": "cd backend && npm start",
+    "server:dev": "cd backend && npm run dev",
+    "client": "cd frontend && npm start",
+    "seed": "cd backend && npm run seed",
+    "test:load": "node load_test/concurrent_login_tester.js",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"npm run server:dev\" \"npm run client\""
+  },
+  "keywords": [
+    "mern",
+    "mongodb",
+    "express",
+    "react",
+    "nodejs",
+    "stylelease"
+  ],
+  "author": "StyleLease Team",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
